@@ -1,0 +1,182 @@
+<html ng-app="myApp">
+<style type="text/css">
+body {
+	    font: normal 13px verdana, sans-serif;
+}
+
+pre {
+	white-space: pre-wrap;
+	word-wrap: break-word;
+	max-width: 99%;
+	background-color: rgba(0,0,0,0.8);
+	border-radius: 10px;
+	padding: 15px;
+	color: wheat;
+}
+
+	table, th , td {
+            border: 1px solid grey;
+            border-collapse: collapse;
+            padding: 5px;
+	    font: normal 13px verdana, sans-serif;
+		color:crimson;
+	    
+         }
+         
+         table tr:nth-child(odd) {
+            background-color: #e9e9c1;
+         }
+         
+         table tr:nth-child(even) {
+            background-color: #f2f2f2;
+         }
+
+	table {
+		margin: 15px 3px;
+	}
+
+button {
+
+    background-color: rgba(230,255,220,0.5);
+    color: cadetblue;
+
+}
+
+	li {
+		padding: 15px;
+	}
+
+</style>
+
+<body ng-init="test=['foo', 'bar']">
+
+
+
+<div ng-controller="myCtrl">
+<pre>{{myWelcome}}</pre>
+<br>
+<hr>
+<br>
+	<button ng-click="start_reveng_files()">REVERSE ENGINEERING - FILES</button>
+	<input value="find " type="text" ng-model="filtStr" />
+	<br>
+	<!--ul>
+		<li ng-repeat="x in cont | filter:filtStr | orderBy:x">{{ x }}</li>
+	</ul-->
+
+	<table>
+		<tr ng-repeat="x in test | filter:filtStr | orderBy:x"><td>{{ x }}</td></tr>
+	</table>
+
+	
+<hr>
+<br>
+	<button ng-click="start_reveng_db()">REVERSE ENGINEERING - DATABASE</button>
+	<input value="find " type="text" ng-model="sqlStr" />
+	<br>
+	<table>
+		<tr ng-repeat="y in dbQueries | filter:sqlStr | orderBy:y"><td>{{ y }}</td></tr>
+	</table>
+	<!-- ul>
+		<li ng-repeat="y in dbQueries | filter:sqlStr | orderBy:y">{{ y }}</li>
+	</ul -->
+	
+</div>
+
+<script src="angular.min.js"></script>
+<script>
+var jsonSer;
+var cont = ["test1", "test2", "test3", "test4444"];
+
+var app = angular.module('myApp', []);
+app.controller('myCtrl', function($scope, $http) {
+
+$scope.cont = cont;
+
+  $http({
+    method : "GET",
+    url : "FIND_STR.php"
+  }).then(function mySucces(response) {
+      	//$scope.myWelcome = response.data;
+	
+	jsonSer = JSON.stringify( response.data ).split(/\\n/);
+      	var spl = jsonSer.splice(5,jsonSer.length);
+      	
+	//alert ( JSON.stringify( $scope.myWelcome ) );
+
+	
+	jsonSer[0].replace(/\t/g, "	");
+	jsonSer[1].replace(/\t/g, "	");
+	jsonSer[2].replace(/\t/g, "	");
+	jsonSer[3].replace(/\t/g, "	");
+	jsonSer[4].replace(/\t/g, "	");
+	//jsonSer[5].replace(/\\t/g, "	");
+	
+	$scope.myWelcome = jsonSer[0] + "\n" +  jsonSer[1] + "\n" + jsonSer[2] + "\n" +  jsonSer[3] + "\n" + jsonSer[4] + "\n";
+	$scope.myWelcome = $scope.myWelcome.replace(/\\t/g, "  |  ");
+	$scope.myWelcome = $scope.myWelcome + "\n\n" + JSON.stringify(spl).replace(/\\\\t\\\\t\\\\t\\\\t\\\\t\\\\t\\\\t\\\\t/, "\n").replace("__________________________________________", "\n\n###\n").replace(/\\\\t/g, "	");
+
+    }, function myError(response) {
+      $scope.myWelcome = response.statusText;
+  });
+
+	$scope.start_reveng_files = function(){
+		$http.get("EXM_FILES.php").then(function (response){
+			alert("auditing files of webapplications"); 
+		});
+	};
+
+	$scope.start_reveng_db = function(){
+		$http.get("EXM_SQL.php").then(function (response){
+			alert("auditing database-queries of webapplications"); 
+		});
+	};
+	
+	var getFile = {
+		method:'GET',
+		url:'fileTrace.php',
+		data: '',
+		dataType: "json",
+		contentType: "application/json; charset=utf-8"
+	};
+	
+	var getDBQueries = {
+		method:'GET',
+		url:'sqlTrace.php',
+		data: '',
+		dataType: "json",
+		contentType: "application/json; charset=utf-8"
+	};
+	var flag = true;
+	 window.setInterval(function(){
+		$http(getFile).then(function mySuccess (response){
+				$scope.cont = response.data;
+				//$scope.cont = ["mi", "pi"];
+				if(flag){
+					//alert ( JSON.stringify( $scope.cont ) );
+
+				}
+				flag = false;
+				console.log(">>>>>>>>>>>>>>>>>>> " + response.data);
+			}, function myErr(err){
+				console.log("########################------------>>>>" + err);
+			});
+		
+
+		$http(getDBQueries).then(function mySuccess (response){
+				$scope.dbQueries = response.data;
+				//$scope.dbQueries = ["mi", "pi"];
+				console.log(response.data);
+
+			}, function myErr (err){
+				console.log(JSON.stringify('[{\'foo\':\'bar\'}]') + "__________________________________++++++++++++++++++ " + err);
+			});
+
+	}, 4000);
+
+
+});
+</script>
+
+
+</html>

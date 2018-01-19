@@ -1,0 +1,175 @@
+#!/usr/bin/perl -w
+package configcms;
+
+
+use DBI;
+use JSON;
+use Data::Dumper;
+
+####DB-LOGIN-DATA
+my ( $db_user, $db_pass, $db_name ) = ("root", "t00rt00r", "CONFIGURATORCMS");
+
+####END###
+
+#SQL-QUERIES AS VARs
+
+my $ins_el = "INSERT INTO elements (el, free) VALUES (?, ?);";
+my $sel_with_rownumb = "SELECT SQL_CALC_FOUND_ROWS * FROM elements";
+my $sel_all = "SELECT * FROM elements;";
+my $sel_categs = "SELECT free FROM elements;";
+
+####END###
+
+####ACCESSORS
+
+our $accIns_el = sub {
+                # make plausibility check with sprintf ...
+                my ( $ref, $sql ) = ( shift, shift );
+                $ins_post = $sql if $sql ne "";
+                $ins_post;
+};
+
+
+####END###
+
+####CONSTRUCTOR### 
+sub new { 
+	my $type = shift;
+        my $self = {};       
+	bless $self, $type;
+        $self;
+}
+
+####END###
+
+####DB-METHODS###
+
+sub con {
+	my ( $ref, $dbh ) = ( shift );
+	$dbh = DBI->connect("DBI:mysql:database=$db_name", $db_user, $db_pass) or die ("Connection refused\n");
+}
+
+sub sql_action {
+		my ( $ref, $dbh, $ret_result, $sql_paramHash ) = ( shift, shift, shift, shift );
+                my( $compl_rows, $is_res ) = ( "", 0);
+		my $query = $dbh->prepare($sql_query);
+                
+		if( 2 > -1 ){
+			$query->execute(@{$sql_paramHash}) or die $DBI::errstr;
+		}
+		else {
+			$query->execute() or die $DBI::errstr;
+		}
+		
+                if( $ret_result == 1 ){
+			$compl_rows = $query -> fetchall_arrayref();
+			$is_res = 1;
+		}
+
+		$query->finish();
+		$compl_rows if $is_res;
+}
+
+sub exec_insert {
+                my ( $ref, $dbh, $sql_query, $sql_paramHash, @resSet ) = ( shift, shift, shift, shift );
+		
+		#$ref->sql_action($dbh, 0, $sql_paramHash);
+		
+                my $query = $dbh->prepare($sql_query);
+                $query->execute(@{$sql_paramHash}) or die $DBI::errstr;
+                $query->finish();
+}
+
+
+sub exec_sel_all {
+
+                my ( $ref, $dbh ) = ( shift, shift );
+                my $row_numb;
+		$resSet = [];
+		my $query = $dbh->prepare($sel_all);
+                $query -> execute();
+                my $compl_rows = $query -> fetchall_arrayref();
+                $query->finish();
+
+
+		#$query = $dbh->prepare("SELECT FOUND_ROWS();");
+                #$query -> execute();
+                #$row_numb = $query -> fetchall_arrayref();
+                #$query->finish();
+                
+		#push(@{$resSet}, $row_numb);
+		push(@{$resSet}, @{$compl_rows});
+		$resSet;	
+}
+
+
+
+sub exec_query {
+                my ( $ref, $dbh, $sql_query, $sql_paramHash, @resSet ) = ( shift, shift, shift, shift );
+
+                my $query = $dbh->prepare($sql_query);
+                $query->execute(@{$sql_paramHash}) or die $DBI::errstr;
+
+                #usefall for "while-loop" and using the "map or foreach $query->{NAME_lc}" into the while ...
+                #@resSet = $query -> fetchrow_hashref();
+                #can be used with the wished keys like "fetchall_hashref(\@keys);" and "keys %$hashref" or "values" or just adapt the sql-query directly (select just needed colmns )
+                my @_keys = @{$query -> {NAME_lc}};
+                #print Dumper $query -> {NAME_lc};
+                my $resSet = $query -> fetchall_arrayref();
+                $query->finish();
+                #print Dumper $resSet;
+
+                my $query2 = $dbh->prepare("select FOUND_ROWS();");
+                $query2 -> execute();
+                
+                my $compl_rows = $query2 -> fetchall_arrayref();
+
+#               $q->header();
+#               print Dumper $query2 -> fetchrow_hashref(); 
+
+                $query2->finish();
+
+                push(@{$resSet}, @{$compl_rows});
+
+                my $json = JSON->new->utf8->encode($resSet);
+                print $json;
+
+                # Generate json format list of lists
+                #print "[";
+                #map {
+                #       print "[";
+                #       for my $ind (0..$#{$_}){
+                #               print $_[$ind].", ";
+                #       }       
+                #       print "],";
+                #} @{$resSet};
+                #print "]";
+
+        }
+
+####END###
+
+
+####EXECUTE####
+
+
+#print "Content-type: text/html\n\n";
+
+print "Content-type: text/json\n\n";
+
+#print '<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">', "\n";
+#print "<html><head><title>Hallo Welt</title><base href='http://localhost/' />";
+#print "<b>CONFIGURATORCMS</b>\n\n";
+
+
+my $inst = configcms->new();
+my ( $dbh, @test );
+
+$dbh = $inst->con($dbh);
+
+#$inst->exec_insert( $dbh, $ins_el, ["TEST1", 1], @test );
+
+my $res_set = $inst->exec_sel_all( $dbh );
+print JSON->new->utf8->encode($res_set);
+
+#print Dumper $res_set;

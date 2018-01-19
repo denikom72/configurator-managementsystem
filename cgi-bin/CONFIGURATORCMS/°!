@@ -1,0 +1,68 @@
+#!/usr/bin/perl
+package db_manager;
+#use strict;
+use DBI;
+use CGI;
+use readnumb;
+#use productlimit2;
+####DB-LOGIN-DATA
+
+my $cgi = CGI->new;
+#my $action = "readnumb";
+my $action = $cgi->param('action');
+#$cgi->param();
+
+while($cgi->param()){
+	if($_ != ""){
+		print; print "\n";
+	} else {
+		print "nothing";
+	} 
+}
+
+
+my $di = sub {
+	my( $act, $params, $dbh ) = ( shift, shift, shift );	
+	
+	print "OK THIS IS ALLRIGHT ".$act;
+	
+	my $inst = $act->new($params, $dbh);
+	$inst->printres();
+};
+
+my %params = (
+
+		#examples of paramRefList
+		#[ "%title%", "%title%", "%title%", "%title%", "%title%", 5, 0]
+		$action => $di
+);	
+
+
+
+
+
+my ( $db_user, $db_pass, $db_name ) = ("root", "t00rt00r", "CONFIGURATORCMS");
+
+my ( $table, $dbh ) = ( "elems" );
+
+####CONSTRUCTOR### 
+sub new { 
+	my $type = shift;
+        my $self = {};       
+	bless $self, $type;
+        $self;
+}
+
+####DB-METHODS###
+
+sub con {
+	my ( $ref, $dbh ) = ( shift, shift );
+	$dbh = DBI->connect("DBI:mysql:database=$db_name", $db_user, $db_pass) or die ("Connection refused\n");
+}
+
+#####MAIN#####
+my $inst = db_manager->new();
+
+$dbh = $inst->con($dbh);
+
+$params{$action}->($action, $dbh, $parms);

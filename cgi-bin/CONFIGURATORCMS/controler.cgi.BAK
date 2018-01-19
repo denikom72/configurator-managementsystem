@@ -1,0 +1,40 @@
+#!/usr/bin/perl
+package controler;
+
+use modules;
+
+my $cgi = CGI->new;
+my $rand_date = $cgi->param("rand_date"); #if $cgi->param("rand_date");
+
+my @listOfPm = 
+( 
+	"mysave", 
+	"myupdate", 
+	"mydelete", 
+	"mytruncate", 
+	"newprice", 
+	"productlimit" 
+);
+
+###SQL-QUERIES UNTANGLE PERL AND NON-PERL CODE
+my $sql_sess = "SELECT rand_data, sess_act FROM login WHERE id = ?;";
+
+### CONNECT DB, SEND QUERY ###
+
+my $inst = db_manager->new( $db, $db_user, $db_pw );	
+my $dbh = $inst->con( $inst->{"db_name"}, $inst->{"user"}, $inst->{"pw"} );
+
+### TODO WHEN READY 
+my $rand = $inst->sel_query( $dbh, $sql_sess, [1] );
+
+#if( $rand_date != $rand->[0][1] ){
+#	map {
+#		if( $_ != $cgi->param("action") ) {
+#			$cgi->param("action")->new()->printres([ @ARGV ]);
+#		}
+#	} @listOfPm;
+#}
+#
+###TODO IF NOT LOCALSTORAGE-DATE_RAND == RAND_DATA->[0][0] OR SESS_ACT == 0 JUST PARAM("ACT")->NEW() WHERE PARAM("ACT") NOT IN PREPARED ARRAY/LIST! NEW TODO MAKE LIST OF NON ALLOWED PM-MODULES IF NOT LOGGED IN
+
+$cgi->param("action")->new()->printres([ @ARGV ]);
